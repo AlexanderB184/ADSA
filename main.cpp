@@ -95,6 +95,9 @@ string school_multiplication(const string& lhs, const string& rhs, int base) {
   return res;
 }
 
+/**
+ * evaluates multiplication in O(n^log3) time using the karatsuba algorithm
+ */
 string karatsuba_multiplication(const string& lhs, const string& rhs,
                                 int base) {
   if (lhs.length() < 2) {
@@ -102,21 +105,29 @@ string karatsuba_multiplication(const string& lhs, const string& rhs,
   } else if (rhs.length() < 2) {
     return school_multiplication(lhs, rhs, base);
   }
-  size_t m = std::max(lhs.length(), rhs.length());
-  size_t m2 = m - m / 2;
-  string low1 = lhs.substr(0, m2);
-  string high1 = lhs.substr(m2);
-  string low2 = rhs.substr(0, m2);
-  string high2 = rhs.substr(m2);
-  string z0 = karatsuba_multiplication(low1, low2, base);
-  string z1 =
-      karatsuba_multiplication(school_addition(low1, high1, base),
-                               school_addition(low2, high2, base), base);
-  string z2 = karatsuba_multiplication(high1, high2, base);
-  string z4 = school_subtraction(school_subtraction(z1, z2, base), z0, base);
-  leftpad(z4, m2);
-  leftpad(z2, m2 * 2);
-  return school_addition(z0, school_addition(z2, z4, base), base);
+
+  size_t max_length = std::max(lhs.length(), rhs.length());
+  size_t half_length = max_length - max_length / 2;  // divide and round up
+
+  string lhs_low = lhs.substr(0, half_length);
+  string lhs_high = lhs.substr(half_length);
+  string rhs_low = rhs.substr(0, half_length);
+  string rhs_high = rhs.substr(half_length);
+
+  string low_prod = karatsuba_multiplication(lhs_low, rhs_low, base);
+  string mid_prod =
+      karatsuba_multiplication(school_addition(lhs_low, lhs_high, base),
+                               school_addition(rhs_low, rhs_high, base), base);
+  string high_prod = karatsuba_multiplication(lhs_high, rhs_high, base);
+
+  mid_prod = school_subtraction(school_subtraction(mid_prod, low_prod, base), high_prod, base);
+
+  // left pad here is equivalent to multiplying by B^k
+  leftpad(mid_prod, half_length);
+  leftpad(high_prod, half_length * 2);
+
+  return school_addition(high_prod, school_addition(mid_prod, low_prod, base),
+                         base);
 }
 
 string add(const string& A, const string& B, const string& base) {
